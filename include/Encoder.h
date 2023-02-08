@@ -3,6 +3,8 @@
 #include <Encoder.h>
 #include <Wire.h>
 #include <vector>
+#include <AS5600.h>
+
 #define tcaAddress 0x70
 AMS_5600 ams5600;
 
