@@ -6,7 +6,7 @@
 #define tcaAddress 0x70
 AMS_5600 ams5600;
 
-using namespace std;
+// Clase que maneja las funciones del encoder: 
 class Encoder
 {
 private:
@@ -47,6 +47,7 @@ Encoder::Encoder()
     _channel = 0;
 }
 
+
 Encoder::Encoder(float valAct, float valPas, int channel)
 {
     this->_valAct = valAct;
@@ -56,15 +57,18 @@ Encoder::Encoder(float valAct, float valPas, int channel)
     this->_channel = channel;
 }
 
+
 void Encoder::ActualizaPrev()
 {
     this->_valPas = this->_valAct;
 }
 
+
 float Encoder::getValActualDegrees()
 {
     return this->_valAct;
 }
+
 
 void Encoder::selectChannel()
 {
@@ -76,16 +80,19 @@ void Encoder::selectChannel()
     delay(10);
 }
 
+
 float Encoder::getCero()
 {
     return this->_cero;
 }
+
 
 float Encoder::getPosDeg()
 {
     this->selectChannel();
     return (ams5600.getRawAngle() / this->_magnEncStepsDegrees);
 }
+
 
 int Encoder::getTurningSense(float valAct, float valPas)
 {
@@ -102,10 +109,16 @@ int Encoder::getTurningSense(float valAct, float valPas)
     }
 }
 
+
 void Encoder::setupCero()
 {
+    // Toma el valor inicial que retorna el encoder, no se realiza 
+    // ningun calculo mat. 
+
     this->_cero = Encoder::getPosDeg();
 }
+
+
 //El valor actual en ese momento se convierte en el 0 y desde 
 //ahi comienza a contar. 
 float Encoder::mapVal()
@@ -122,6 +135,7 @@ float Encoder::mapVal()
     }
     return this->_valAct; 
 }
+
 
 float Encoder::SumDegTotal(const float constant)
 {
@@ -168,11 +182,13 @@ float Encoder::SumDegTotal(const float constant)
     return mapTotal;
 }
 
+
 float Encoder::mapTotal(float constante)
 {
     float val = (this->_valTotal * 360) / constante;
     return val;
 }
+
 
 float Encoder::promedio(int resolucion)
 {
