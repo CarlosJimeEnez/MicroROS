@@ -5,7 +5,6 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 
-
 #include <std_msgs/msg/int32.h>
 #include <std_msgs/msg/float64.h> 
 #if !defined(MICRO_ROS_TRANSPORT_ARDUINO_SERIAL)
@@ -22,6 +21,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 
+#include <Servo.h>
 
 //-------- Wifi variables ------ //
 const char *ssid = "RS_NETWORK_1_2.4G"; 
@@ -40,7 +40,7 @@ const char *mqtt_username = "emqx";
 const char *mqtt_password = "public";
 const int mqtt_port = 1883;
 
-
+// MQTT Objects: 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -62,9 +62,20 @@ rcl_subscription_t subscriber;
 std_msgs__msg__Int32 msg2;
 
 
-
 // ENCODER Configuration: 
 Encoder encoder1(0,0,0); 
+
+// Servomotor configurations: 
+static const int servopin = 16; 
+Servo servo; 
+
+// PWM CONFIGURATION: 
+// const int motor0 = 16; 
+// // setting PWM properties: 
+// const int freq = 50; 
+// const int motor0_channel = 0; 
+// const int resolution = 12; 
+ int posDegrees = 0; 
 
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
@@ -79,16 +90,41 @@ void subscription_callback(const void * msgin)
   // Process message
   RCSOFTCHECK(rcl_publish(&publisher, &encoder_data, NULL));
 
+  int msg_int = msg->data; 
+
+// Algoritmo para mover el motor: 
+  if (msg_int > 2) 
+  {
+    posDegrees = posDegrees + 1; 
+    servo.write(posDegrees);
+  } 
+  else if (msg_int < -2)
+  {
+    posDegrees = posDegrees - 1;  
+    servo.write(posDegrees);
+  }
+  
   encoder1.mapVal(); 
   encoder_data.data = encoder1.SumDegTotal(360); 
-
-  int msg_int = msg->data;   
-  if(0 < msg_int && msg_int < 5){
-    client.publish("esp32/test/rsautomation", "0");
-  }else{
-    client.publish("esp32/test/rsautomation", "1");
-  }
     
+  // DEBUG Datos: 
+  // float pwm_motor0 = map(msg_int, -90, 90, 0, 409); 
+  // float pwm_period = map(pwm_motor0, 0, 0.02, 0.001, 0.002); 
+
+  // String msg_strn = String(vel);
+  
+  // String pwm_period_string = String(pwm_period);
+  // String pwm_motor0_string = String(pwm_motor0);
+  
+  //client.publish("esp32/test/rsautomation", (char *)msg_strn.c_str()); 
+  // client.publish("esp32/test/pwm_period", (char *)pwm_period_string.c_str()); 
+  // client.publish("esp32/test/pwm_motor0", (char *)pwm_motor0_string.c_str()); 
+  
+
+  // String pwm_motor0_string = String(pwm_motor0); 
+  // client.publish("esp32/test/rsautomation", (char *)pwm_motor0_string.c_str()); 
+
+
   RCSOFTCHECK(rcl_publish(&publisher, &encoder_data, NULL));
 }
 
@@ -117,7 +153,6 @@ void callback(char *topic, byte *payload, unsigned int length) {
 
 /// --------------------------  SETUP ---------------------------------- ///
 void setup() {
-  pinMode(GPIO_NUM_0, OUTPUT); 
 
   // ---------------- Serial port Configuration: ---------------- //
   Serial.begin(115200);
@@ -150,7 +185,8 @@ void setup() {
   // publish and subscribe
   client.publish(topic, "Hi EMQX I'm ESP32 ^^");
   client.subscribe(topic);
-  
+  client.subscribe("esp32/test/pwm_period");   
+  client.subscribe("esp32/test/pwm_motor0");   
 
   // ----------------------- ROS Configuration: --------------------- // 
   set_microros_serial_transports(Serial);
@@ -188,8 +224,12 @@ void setup() {
   RCCHECK(rclc_executor_init(&executor, &support.context, 1, &allocator));
   RCCHECK(rclc_executor_add_subscription(&executor, &subscriber, &msg2, &subscription_callback, ON_NEW_DATA));
  
-  // --------- Setup Encoder -------- //
-  encoder1.setupCero(); 
+  // --------------- Setup Encoder -------- //
+  encoder1.setupCero();
+
+  // ---------------  Servo Configuration --------------- // 
+  servo.attach(servopin); 
+  servo.write(0); 
 }
 
 
