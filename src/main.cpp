@@ -70,12 +70,11 @@ static const int servopin = 16;
 Servo servo; 
 
 // PWM CONFIGURATION: 
-// const int motor0 = 16; 
-// // setting PWM properties: 
-// const int freq = 50; 
-// const int motor0_channel = 0; 
-// const int resolution = 12; 
- int posDegrees = 0; 
+const int motor0 = 16; 
+const int freq = 50; 
+const int motor0_channel = 0; 
+const int resolution = 12; 
+int posDegrees = 0; 
 
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){error_loop();}}
@@ -92,21 +91,40 @@ void subscription_callback(const void * msgin)
 
   int msg_int = msg->data; 
 
-// Algoritmo para mover el motor: 
-  if (msg_int > 2) 
+// ----------- Algoritmo para mover el motor ----------- : 
+  // if (msg_int > 1) 
+  // {
+  //   posDegrees = posDegrees + 1.5; 
+  //   servo.write(posDegrees);
+  // } 
+  // else if (msg_int < -1)
+  // {
+  //   posDegrees = posDegrees - 1.5;  
+  //   servo.write(posDegrees);
+  // }
+
+// -----------
+  for (size_t i = 100; i < 508; i++)
   {
-    posDegrees = posDegrees + 1; 
-    servo.write(posDegrees);
-  } 
-  else if (msg_int < -2)
-  {
-    posDegrees = posDegrees - 1;  
-    servo.write(posDegrees);
+    ledcWrite(motor0_channel, i); 
+    //String i_string = String(i);
+    //client.publish("esp32/test/rsautomation", (char *)i_string.c_str()); 
+    delay(10); 
   }
+
+  for (size_t duty_cicle = 508; duty_cicle >= 100 ; duty_cicle --)
+  {
+    ledcWrite(motor0_channel, duty_cicle); 
+    // String duty_cicle_string = String(duty_cicle);
+    // client.publish("esp32/test/rsautomation", (char *)duty_cicle_string.c_str()); 
+    delay(10); 
+  }
+  
   
   encoder1.mapVal(); 
   encoder_data.data = encoder1.SumDegTotal(360); 
-    
+
+  
   // DEBUG Datos: 
   // float pwm_motor0 = map(msg_int, -90, 90, 0, 409); 
   // float pwm_period = map(pwm_motor0, 0, 0.02, 0.001, 0.002); 
@@ -117,8 +135,8 @@ void subscription_callback(const void * msgin)
   // String pwm_motor0_string = String(pwm_motor0);
   
   //client.publish("esp32/test/rsautomation", (char *)msg_strn.c_str()); 
-  // client.publish("esp32/test/pwm_period", (char *)pwm_period_string.c_str()); 
-  // client.publish("esp32/test/pwm_motor0", (char *)pwm_motor0_string.c_str()); 
+  //client.publish("esp32/test/pwm_period", (char *)pwm_period_string.c_str()); 
+  //client.publish("esp32/test/pwm_motor0", (char *)pwm_motor0_string.c_str()); 
   
 
   // String pwm_motor0_string = String(pwm_motor0); 
@@ -227,9 +245,13 @@ void setup() {
   // --------------- Setup Encoder -------- //
   encoder1.setupCero();
 
+  // --------------- PWM Configuration --------------- // 
+  ledcSetup(motor0_channel, freq, resolution); 
+  ledcAttachPin(motor0, motor0_channel); 
+
   // ---------------  Servo Configuration --------------- // 
-  servo.attach(servopin); 
-  servo.write(0); 
+  // servo.attach(servopin); 
+  // servo.write(0); 
 }
 
 
